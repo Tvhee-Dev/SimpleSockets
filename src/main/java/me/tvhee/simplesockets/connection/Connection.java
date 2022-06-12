@@ -1,8 +1,8 @@
-package me.tvhee.simplesockets.api.connection;
+package me.tvhee.simplesockets.connection;
 
 import java.util.List;
-import me.tvhee.simplesockets.api.handler.Response;
-import me.tvhee.simplesockets.api.socket.Socket;
+import me.tvhee.simplesockets.handler.Response;
+import me.tvhee.simplesockets.socket.Socket;
 
 public interface Connection
 {

@@ -1,7 +1,7 @@
-package me.tvhee.simplesockets.api.connection;
+package me.tvhee.simplesockets.connection;
 
-import me.tvhee.simplesockets.connection.ClientConnection;
-import me.tvhee.simplesockets.connection.ServerConnection;
+import me.tvhee.simplesockets.connection.internal.ClientConnection;
+import me.tvhee.simplesockets.connection.internal.ServerConnection;
 
 public final class ConnectionManager
 {

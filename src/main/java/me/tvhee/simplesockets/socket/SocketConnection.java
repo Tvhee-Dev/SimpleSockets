@@ -3,10 +3,9 @@ package me.tvhee.simplesockets.socket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import me.tvhee.simplesockets.api.socket.Socket;
-import me.tvhee.simplesockets.connection.ClientConnection;
-import me.tvhee.simplesockets.api.connection.Connection;
-import me.tvhee.simplesockets.connection.ServerConnection;
+import me.tvhee.simplesockets.connection.internal.ClientConnection;
+import me.tvhee.simplesockets.connection.Connection;
+import me.tvhee.simplesockets.connection.internal.ServerConnection;
 
 public final class SocketConnection implements Socket
 {

@@ -1,7 +1,6 @@
-package me.tvhee.simplesockets.api.socket;
+package me.tvhee.simplesockets.socket;
 
-import java.io.Closeable;
-import me.tvhee.simplesockets.api.connection.Connection;
+import me.tvhee.simplesockets.connection.Connection;
 
 public interface Socket
 {

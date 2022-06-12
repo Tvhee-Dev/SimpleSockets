@@ -1,10 +1,10 @@
-package me.tvhee.simplesockets.connection;
+package me.tvhee.simplesockets.connection.internal;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
-import me.tvhee.simplesockets.api.socket.Socket;
+import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.socket.SocketConnection;
 
 public final class ServerConnection extends ConnectionAbstract

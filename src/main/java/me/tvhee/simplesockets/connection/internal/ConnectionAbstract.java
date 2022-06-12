@@ -1,10 +1,10 @@
-package me.tvhee.simplesockets.connection;
+package me.tvhee.simplesockets.connection.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import me.tvhee.simplesockets.api.connection.Connection;
-import me.tvhee.simplesockets.api.handler.Response;
-import me.tvhee.simplesockets.api.socket.Socket;
+import me.tvhee.simplesockets.handler.Response;
+import me.tvhee.simplesockets.socket.Socket;
+import me.tvhee.simplesockets.connection.Connection;
 
 public abstract class ConnectionAbstract implements Connection
 {
