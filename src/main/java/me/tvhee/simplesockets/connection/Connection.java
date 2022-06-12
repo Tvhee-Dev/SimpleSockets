@@ -1,7 +1,7 @@
 package me.tvhee.simplesockets.connection;
 
 import java.util.List;
-import me.tvhee.simplesockets.handler.Response;
+import me.tvhee.simplesockets.handler.Handler;
 import me.tvhee.simplesockets.socket.Socket;
 
 public interface Connection
@@ -12,9 +12,9 @@ public interface Connection
 
 	List<Socket> getSockets();
 
-	void addHandler(Response handler);
+	void addHandler(Handler handler);
 
-	void removeHandler(Response handler);
+	void removeHandler(Handler handler);
 
 	boolean isOpen();
 

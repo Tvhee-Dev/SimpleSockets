@@ -2,25 +2,25 @@ package me.tvhee.simplesockets.connection.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import me.tvhee.simplesockets.handler.Response;
+import me.tvhee.simplesockets.handler.Handler;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.connection.Connection;
 
 public abstract class ConnectionAbstract implements Connection
 {
-	protected final List<Response> handlers = new ArrayList<>();
+	protected final List<Handler> handlers = new ArrayList<>();
 	protected boolean running;
 
 	ConnectionAbstract() {}
 
 	@Override
-	public void addHandler(Response handler)
+	public void addHandler(Handler handler)
 	{
 		handlers.add(handler);
 	}
 
 	@Override
-	public void removeHandler(Response handler)
+	public void removeHandler(Handler handler)
 	{
 		handlers.remove(handler);
 	}
