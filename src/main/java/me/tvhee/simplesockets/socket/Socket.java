@@ -1,5 +1,6 @@
 package me.tvhee.simplesockets.socket;
 
+import java.net.SocketAddress;
 import me.tvhee.simplesockets.connection.Connection;
 
 public interface Socket
@@ -7,6 +8,8 @@ public interface Socket
 	String getName();
 
 	void setName(String name);
+
+	SocketAddress getAddress();
 
 	void start();
 
