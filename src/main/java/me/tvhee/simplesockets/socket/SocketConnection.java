@@ -43,9 +43,15 @@ public final class SocketConnection implements Socket
 	}
 
 	@Override
-	public SocketAddress getAddress()
+	public SocketAddress getRemoteAddress()
 	{
 		return socket.getRemoteSocketAddress();
+	}
+
+	@Override
+	public SocketAddress getLocalAddress()
+	{
+		return socket.getLocalSocketAddress();
 	}
 
 	@Override

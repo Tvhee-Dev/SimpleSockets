@@ -9,7 +9,11 @@ public interface Socket
 
 	void setName(String name);
 
-	SocketAddress getAddress();
+	//The address of the machine the socket is connected to
+	SocketAddress getRemoteAddress();
+
+	//THe address of THIS machine
+	SocketAddress getLocalAddress();
 
 	void start();
 
