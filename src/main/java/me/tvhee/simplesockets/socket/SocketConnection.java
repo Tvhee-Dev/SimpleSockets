@@ -3,7 +3,7 @@ package me.tvhee.simplesockets.socket;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import me.tvhee.simplesockets.connection.internal.ClientConnection;
 import me.tvhee.simplesockets.connection.Connection;
 import me.tvhee.simplesockets.connection.internal.ServerConnection;
@@ -43,15 +43,15 @@ public final class SocketConnection implements Socket
 	}
 
 	@Override
-	public SocketAddress getRemoteAddress()
+	public InetSocketAddress getRemoteAddress()
 	{
-		return socket.getRemoteSocketAddress();
+		return (InetSocketAddress) socket.getRemoteSocketAddress();
 	}
 
 	@Override
-	public SocketAddress getLocalAddress()
+	public InetSocketAddress getLocalAddress()
 	{
-		return socket.getLocalSocketAddress();
+		return (InetSocketAddress) socket.getLocalSocketAddress();
 	}
 
 	@Override

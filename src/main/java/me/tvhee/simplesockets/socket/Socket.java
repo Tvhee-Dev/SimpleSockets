@@ -1,6 +1,6 @@
 package me.tvhee.simplesockets.socket;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import me.tvhee.simplesockets.connection.Connection;
 
 public interface Socket
@@ -10,10 +10,10 @@ public interface Socket
 	void setName(String name);
 
 	//The address of the machine the socket is connected to
-	SocketAddress getRemoteAddress();
+	InetSocketAddress getRemoteAddress();
 
 	//THe address of THIS machine
-	SocketAddress getLocalAddress();
+	InetSocketAddress getLocalAddress();
 
 	void start();
 
