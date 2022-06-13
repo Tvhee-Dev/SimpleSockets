@@ -33,6 +33,9 @@ public final class SocketConnection implements Socket
 	@Override
 	public void setName(String name)
 	{
+		if(connection.getSocket(name) != null)
+			throw new IllegalArgumentException("Socket name " + name + " is already in use!");
+
 		this.name = name;
 
 		if(this.socketThread != null)
