@@ -6,6 +6,8 @@ public interface Socket
 {
 	String getName();
 
+	void setName(String name);
+
 	void start();
 
 	boolean isRunning();

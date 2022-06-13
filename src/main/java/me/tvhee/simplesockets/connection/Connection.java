@@ -8,8 +8,11 @@ public interface Connection
 {
 	void start();
 
-	Socket getSocket();
+	//Returns the socket with the specified name
+	Socket getSocket(String name);
 
+	//Returns the list of connected sockets. If this connection instance is a ClientConnection it is always safe
+	//to call .get(0). The size will be always 1
 	List<Socket> getSockets();
 
 	void addHandler(Handler handler);

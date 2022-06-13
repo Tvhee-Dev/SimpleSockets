@@ -27,9 +27,10 @@ public final class ServerConnection extends ConnectionAbstract
 			{
 				try
 				{
-					Socket client = new SocketConnection(serverSocket.accept(), this);
-					client.start();
-					sockets.add(client);
+					Socket socket = new SocketConnection(serverSocket.accept(), this);
+					socket.start();
+					sockets.add(socket);
+					handlers.forEach(handler -> handler.connectionEstablished(socket));
 				}
 				catch(IOException e)
 				{
@@ -60,12 +61,19 @@ public final class ServerConnection extends ConnectionAbstract
 			throw new IllegalArgumentException("Socket is not closed!");
 
 		sockets.remove(socket);
+		handlers.forEach(handler -> handler.connectionTerminated(socket));
 	}
 
 	@Override
-	public Socket getSocket()
+	public Socket getSocket(String name)
 	{
-		throw new IllegalArgumentException("Please use getSockets() if using ServerConnection!");
+		for(Socket socket : sockets)
+		{
+			if(socket.getName().equals(name))
+				return socket;
+		}
+
+		return null;
 	}
 
 	@Override

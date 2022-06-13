@@ -11,6 +11,7 @@ public final class SocketConnection implements Socket
 {
 	private final java.net.Socket socket;
 	private final Connection connection;
+	private String name;
 	private boolean running;
 	private SocketThread socketThread;
 	private String lastMessage;
@@ -19,12 +20,22 @@ public final class SocketConnection implements Socket
 	{
 		this.socket = socket;
 		this.connection = connection;
+		this.name = socket.getInetAddress().toString();
 	}
 
 	@Override
 	public String getName()
 	{
-		return socket.getInetAddress().toString();
+		return name;
+	}
+
+	@Override
+	public void setName(String name)
+	{
+		this.name = name;
+
+		if(this.socketThread != null)
+			this.socketThread.setName(name);
 	}
 
 	@Override
@@ -37,6 +48,7 @@ public final class SocketConnection implements Socket
 
 			socketThread = new SocketThread(new BufferedReader(new InputStreamReader(socket.getInputStream())),
 					new PrintWriter(socket.getOutputStream(), true), this);
+			socketThread.setName(name);
 			socketThread.start();
 
 			running = true;

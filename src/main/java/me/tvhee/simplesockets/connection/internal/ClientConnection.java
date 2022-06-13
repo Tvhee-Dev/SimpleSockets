@@ -1,5 +1,6 @@
 package me.tvhee.simplesockets.connection.internal;
 
+import java.util.Collections;
 import java.util.List;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.socket.SocketConnection;
@@ -18,6 +19,7 @@ public final class ClientConnection extends ConnectionAbstract
 	{
 		this.running = true;
 		this.socket.start();
+		this.handlers.forEach(handler -> handler.connectionEstablished(this.socket));
 	}
 
 	@Override
@@ -28,18 +30,22 @@ public final class ClientConnection extends ConnectionAbstract
 		if(!socket.isClosed())
 			socket.close();
 
+		this.handlers.forEach(handler -> handler.connectionTerminated(this.socket));
 		this.running = false;
 	}
 
 	@Override
-	public Socket getSocket()
+	public Socket getSocket(String name)
 	{
-		return socket;
+		if(socket.getName().equals(name))
+			return socket;
+
+		return null;
 	}
 
 	@Override
 	public List<Socket> getSockets()
 	{
-		throw new IllegalArgumentException("Please use getSocket() if using ClientConnection!");
+		return Collections.singletonList(socket);
 	}
 }
