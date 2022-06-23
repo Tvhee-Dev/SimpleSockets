@@ -6,11 +6,7 @@ public interface Handler
 {
 	void handle(Socket socket, String message);
 
-	default void connectionEstablished(Socket socket)
-	{
-	}
+	default void connectionEstablished(Socket socket) {}
 
-	default void connectionTerminated(Socket socket)
-	{
-	}
+	default void connectionTerminated(Socket socket) {}
 }
