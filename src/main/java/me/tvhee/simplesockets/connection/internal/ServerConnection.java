@@ -30,7 +30,7 @@ public final class ServerConnection extends ConnectionAbstract
 					Socket socket = new SocketConnection(serverSocket.accept(), this);
 					socket.start();
 					sockets.add(socket);
-					handlers.forEach(handler -> handler.connectionEstablished(socket));
+					socketHandlers.forEach(handler -> handler.connectionEstablished(socket));
 				}
 				catch(IOException e)
 				{
@@ -61,7 +61,7 @@ public final class ServerConnection extends ConnectionAbstract
 			throw new IllegalArgumentException("Socket is not closed!");
 
 		sockets.remove(socket);
-		handlers.forEach(handler -> handler.connectionTerminated(socket));
+		socketHandlers.forEach(handler -> handler.connectionTerminated(socket));
 	}
 
 	@Override

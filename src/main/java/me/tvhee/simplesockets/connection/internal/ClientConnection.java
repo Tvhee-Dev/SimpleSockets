@@ -19,7 +19,7 @@ public final class ClientConnection extends ConnectionAbstract
 	{
 		this.running = true;
 		this.socket.start();
-		this.handlers.forEach(handler -> handler.connectionEstablished(this.socket));
+		this.socketHandlers.forEach(handler -> handler.connectionEstablished(this.socket));
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public final class ClientConnection extends ConnectionAbstract
 		if(!socket.isClosed())
 			socket.close();
 
-		this.handlers.forEach(handler -> handler.connectionTerminated(this.socket));
+		this.socketHandlers.forEach(handler -> handler.connectionTerminated(this.socket));
 		this.running = false;
 	}
 
