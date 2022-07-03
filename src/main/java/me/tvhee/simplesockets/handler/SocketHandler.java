@@ -8,5 +8,5 @@ public interface SocketHandler
 
 	default void connectionEstablished(Socket socket) {}
 
-	default void connectionTerminated(Socket socket) {}
+	default void connectionTerminated(Socket socket, SocketTermination reason) {}
 }

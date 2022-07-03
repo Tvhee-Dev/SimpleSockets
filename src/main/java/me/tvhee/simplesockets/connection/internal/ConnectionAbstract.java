@@ -3,6 +3,7 @@ package me.tvhee.simplesockets.connection.internal;
 import java.util.ArrayList;
 import java.util.List;
 import me.tvhee.simplesockets.handler.SocketHandler;
+import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.connection.Connection;
 
@@ -25,7 +26,7 @@ public abstract class ConnectionAbstract implements Connection
 		socketHandlers.remove(socketHandler);
 	}
 
-	public void notify(Socket socket, String message)
+	public void notifyHandlers(Socket socket, String message)
 	{
 		socketHandlers.forEach(socketHandler -> socketHandler.handle(socket, message));
 	}
@@ -37,8 +38,9 @@ public abstract class ConnectionAbstract implements Connection
 	}
 
 	@Override
-	public void close()
-	{
-		this.running = false;
-	}
+	public abstract void close();
+
+	public abstract void handleAuthenticated(Socket socket);
+
+	public abstract void handleClose(Socket socket, SocketTermination reason);
 }

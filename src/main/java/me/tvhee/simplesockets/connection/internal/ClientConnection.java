@@ -2,36 +2,118 @@ package me.tvhee.simplesockets.connection.internal;
 
 import java.util.Collections;
 import java.util.List;
+import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.socket.SocketConnection;
 
 public final class ClientConnection extends ConnectionAbstract
 {
-	private final Socket socket;
+	private final String serverIP;
+	private final int serverPort;
+	private long reconnect;
+	private String secretKey;
+	private Socket socket;
 
-	public ClientConnection(String serverIP, int serverPort) throws Exception
+	public ClientConnection(String serverIP, int serverPort)
 	{
-		this.socket = new SocketConnection(new java.net.Socket(serverIP, serverPort), this);
+		this.serverIP = serverIP;
+		this.serverPort = serverPort;
 	}
 
 	@Override
 	public void start()
 	{
-		this.running = true;
-		this.socket.start();
-		this.socketHandlers.forEach(handler -> handler.connectionEstablished(this.socket));
+		try
+		{
+			SocketConnection socketConnection = new SocketConnection(new java.net.Socket(serverIP, serverPort), this);
+			socketConnection.start();
+			socketConnection.sendMessage("Secret " + secretKey);
+			running = true;
+		}
+		catch(Exception e)
+		{
+			throw new IllegalArgumentException("Could not connect!", e);
+		}
 	}
 
 	@Override
 	public void close()
 	{
-		super.close();
+		if(!running)
+			return;
+
+		running = false;
+
+		if(socket == null)
+			return;
 
 		if(!socket.isClosed())
+		{
 			socket.close();
+			socket = null;
+		}
+	}
 
-		this.socketHandlers.forEach(handler -> handler.connectionTerminated(this.socket));
-		this.running = false;
+	@Override
+	public void notifyHandlers(Socket socket, String message)
+	{
+		if(message.equals("close"))
+			reconnect = -1;
+
+		super.notifyHandlers(socket, message);
+	}
+
+	@Override
+	public void handleAuthenticated(Socket socket)
+	{
+		this.socket = socket;
+		this.socketHandlers.forEach(handler -> handler.connectionEstablished(socket));
+	}
+
+	@Override
+	public void handleClose(Socket socket, SocketTermination reason)
+	{
+		if(!socket.isClosed() && socket.isRunning())
+			throw new IllegalArgumentException("Socket is not closed!");
+
+		if(this.socket == null)
+			return;
+
+		Runnable finishRunnable = () ->
+		{
+			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
+			running = false;
+			ClientConnection.this.socket = null;
+		};
+
+		if(reason == SocketTermination.TERMINATED_BY_SERVER)
+		{
+			new Thread(() ->
+			{
+				if(reconnect > 0)
+				{
+					System.out.println("[Warning] Lost connection with " + socket.getRemoteAddress() + "!");
+
+					try
+					{
+						Thread.sleep(reconnect);
+						ClientConnection.this.start();
+						System.out.println("[Success] Connected successfully back with " + socket.getRemoteAddress());
+						return;
+					}
+					catch(Exception e)
+					{
+						System.err.println("[Error] Could not reconnect to " + socket.getRemoteAddress() + "!");
+					}
+				}
+
+				finishRunnable.run();
+			}).start();
+		}
+		else
+		{
+			finishRunnable.run();
+		}
 	}
 
 	@Override
@@ -47,5 +129,35 @@ public final class ClientConnection extends ConnectionAbstract
 	public List<Socket> getSockets()
 	{
 		return Collections.singletonList(socket);
+	}
+
+	@Override
+	public void setSecretKey(String key)
+	{
+		if(key != null && key.isEmpty())
+			key = null;
+
+		this.secretKey = key;
+	}
+
+	@Override
+	public String getSecretKey()
+	{
+		return secretKey;
+	}
+
+	@Override
+	public void setReconnectTime(long reconnectTime)
+	{
+		if(reconnectTime < 0)
+			reconnectTime = reconnectTime * -1;
+
+		this.reconnect = reconnectTime;
+	}
+
+	@Override
+	public long getReconnectTime()
+	{
+		return reconnect;
 	}
 }

@@ -2,6 +2,7 @@ package me.tvhee.simplesockets.socket;
 
 import java.net.InetSocketAddress;
 import me.tvhee.simplesockets.connection.Connection;
+import me.tvhee.simplesockets.handler.SocketTermination;
 
 public interface Socket
 {
@@ -24,6 +25,8 @@ public interface Socket
 	void sendMessage(String message, boolean duplicateCheck);
 
 	void close();
+
+	void close(SocketTermination reason);
 
 	boolean isClosed();
 

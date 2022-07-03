@@ -4,24 +4,42 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import me.tvhee.simplesockets.connection.internal.ClientConnection;
+import java.net.SocketException;
+import java.util.Timer;
+import java.util.TimerTask;
 import me.tvhee.simplesockets.connection.Connection;
+import me.tvhee.simplesockets.connection.internal.ClientConnection;
+import me.tvhee.simplesockets.connection.internal.ConnectionAbstract;
 import me.tvhee.simplesockets.connection.internal.ServerConnection;
+import me.tvhee.simplesockets.handler.SocketTermination;
 
 public final class SocketConnection implements Socket
 {
 	private final java.net.Socket socket;
-	private final Connection connection;
+	private final TimerTask authenticationTask;
+	private final ConnectionAbstract connection;
 	private String name;
 	private boolean running;
-	private SocketThread socketThread;
+	private Timer timer;
+	private boolean authenticated;
+	private BufferedReader socketInput;
+	private PrintWriter socketOutput;
 	private String lastMessage;
 
 	public SocketConnection(java.net.Socket socket, Connection connection)
 	{
 		this.socket = socket;
-		this.connection = connection;
+		this.connection = (ConnectionAbstract) connection;
 		this.name = socket.getInetAddress().toString();
+		this.authenticationTask = new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				if(!authenticated && !isClosed())
+					close();
+			}
+		};
 	}
 
 	@Override
@@ -37,9 +55,6 @@ public final class SocketConnection implements Socket
 			throw new IllegalArgumentException("Socket name " + name + " is already in use!");
 
 		this.name = name;
-
-		if(this.socketThread != null)
-			this.socketThread.setName(name);
 	}
 
 	@Override
@@ -62,12 +77,68 @@ public final class SocketConnection implements Socket
 			if(running)
 				throw new IllegalArgumentException("Socket is already running on " + socket.getInetAddress().toString() + "!");
 
-			socketThread = new SocketThread(new BufferedReader(new InputStreamReader(socket.getInputStream())),
-					new PrintWriter(socket.getOutputStream(), true), this);
-			socketThread.setName(name);
-			socketThread.start();
-
+			socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			socketOutput = new PrintWriter(socket.getOutputStream(), true);
 			running = true;
+
+			new Thread(() ->
+			{
+				timer = new Timer();
+				timer.schedule(authenticationTask, 5000);
+
+				while(running)
+				{
+					try
+					{
+						String message;
+						while((message = socketInput.readLine()) != null && running)
+						{
+							if(!authenticated)
+							{
+								if(message.startsWith("Secret ") && connection instanceof ServerConnection)
+								{
+									String inputSecret = message.split("Secret ", 2)[1];
+									String serverSecret = connection.getSecretKey();
+
+									if(serverSecret != null && !serverSecret.equals(inputSecret))
+										continue;
+
+									sendMessage("SecretAccepted");
+									authenticated = true;
+									connection.handleAuthenticated(this);
+								}
+								else if(message.equals("SecretAccepted") && connection instanceof ClientConnection)
+								{
+									authenticated = true;
+									connection.handleAuthenticated(this);
+								}
+
+								continue;
+							}
+
+							connection.notifyHandlers(this, message);
+
+							if(message.equals("close"))
+							{
+								close(SocketTermination.TERMINATED_BY_SERVER);
+								break;
+							}
+						}
+					}
+					catch(Exception e)
+					{
+						if(e instanceof SocketException && e.getMessage().equals("Connection reset"))
+						{
+							close(SocketTermination.TERMINATED_BY_SERVER);
+						}
+						else
+						{
+							close(SocketTermination.ERROR);
+							e.printStackTrace();
+						}
+					}
+				}
+			}).start();
 		}
 		catch(Exception e)
 		{
@@ -90,8 +161,8 @@ public final class SocketConnection implements Socket
 	@Override
 	public void sendMessage(String message, boolean duplicateCheck)
 	{
-		if(!running)
-			throw new IllegalArgumentException("Socket is not running! Please call start() first");
+		if(isClosed())
+			throw new IllegalArgumentException("Socket is closed!");
 
 		if(message.equals(lastMessage) && duplicateCheck)
 			return;
@@ -101,7 +172,7 @@ public final class SocketConnection implements Socket
 			if(message.equals("close"))
 				throw new IllegalArgumentException("If you'd like to close the connection, call close()!");
 
-			socketThread.sendMessage(message);
+			socketOutput.println(message);
 			lastMessage = message;
 		}
 		catch(Exception e)
@@ -113,17 +184,44 @@ public final class SocketConnection implements Socket
 	@Override
 	public void close()
 	{
+		close(SocketTermination.TERMINATED_BY_CLIENT);
+	}
+
+	@Override
+	public void close(SocketTermination reason)
+	{
 		try
 		{
-			socketThread.sendMessage("close");
-			running = false;
-			socketThread = null;
-			socket.close();
+			if(isClosed())
+				return;
 
-			if(connection instanceof ServerConnection)
-				((ServerConnection) connection).unregister(this);
-			else if(connection instanceof ClientConnection)
-				connection.close();
+			running = false;
+			lastMessage = null;
+			authenticated = false;
+
+			if(socketInput != null)
+			{
+				socketInput.close();
+				socketInput = null;
+			}
+
+			if(socketOutput != null)
+			{
+				socketOutput.write("close");
+				socketOutput.close();
+				socketOutput = null;
+			}
+
+			if(timer != null)
+			{
+				timer.cancel();
+				timer = null;
+			}
+
+			if(!socket.isClosed())
+				socket.close();
+
+			connection.handleClose(this, reason);
 		}
 		catch(Exception e)
 		{
@@ -134,12 +232,18 @@ public final class SocketConnection implements Socket
 	@Override
 	public boolean isClosed()
 	{
-		return socket.isClosed();
+		return socket.isClosed() || !running;
 	}
 
 	@Override
 	public Connection getConnection()
 	{
 		return connection;
+	}
+
+	@Override
+	public String toString()
+	{
+		return socket.toString();
 	}
 }

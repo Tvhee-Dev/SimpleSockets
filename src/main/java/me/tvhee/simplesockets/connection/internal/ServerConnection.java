@@ -4,64 +4,92 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
+import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.socket.SocketConnection;
 
 public final class ServerConnection extends ConnectionAbstract
 {
 	private final List<Socket> sockets = new ArrayList<>();
-	private final ServerSocket serverSocket;
+	private final int serverPort;
+	private String secretKey;
+	private ServerSocket serverSocket;
 
-	public ServerConnection(int serverPort) throws Exception
+	public ServerConnection(int serverPort)
 	{
-		serverSocket = new ServerSocket(serverPort);
+		this.serverPort = serverPort;
 	}
 
 	public void start()
 	{
-		running = true;
-
-		new Thread(() ->
+		try
 		{
-			while(running)
+			this.serverSocket = new ServerSocket(serverPort);
+
+			new Thread(() ->
 			{
 				try
 				{
-					Socket socket = new SocketConnection(serverSocket.accept(), this);
-					socket.start();
-					sockets.add(socket);
-					socketHandlers.forEach(handler -> handler.connectionEstablished(socket));
+					while(running)
+						new SocketConnection(serverSocket.accept(), ServerConnection.this).start();
+
+					serverSocket = null;
 				}
 				catch(IOException e)
 				{
-					e.printStackTrace();
+					if(running)
+						e.printStackTrace();
 				}
-			}
-		}).start();
+
+			}).start();
+			this.running = true;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void close()
 	{
-		super.close();
-
-		for(Socket socket : new ArrayList<>(sockets))
+		try
 		{
-			if(!socket.isClosed())
-				socket.close();
-		}
+			running = false;
 
-		sockets.clear();
-		running = false;
+			for(Socket socket : new ArrayList<>(sockets))
+			{
+				if(socket != null && !socket.isClosed())
+					socket.close();
+			}
+
+			serverSocket.close();
+			serverSocket = null;
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
-	public void unregister(Socket socket)
+	@Override
+	public void handleAuthenticated(Socket socket)
+	{
+		sockets.add(socket);
+		socketHandlers.forEach(handler -> handler.connectionEstablished(socket));
+	}
+
+	@Override
+	public void handleClose(Socket socket, SocketTermination reason)
 	{
 		if(!socket.isClosed() && socket.isRunning())
 			throw new IllegalArgumentException("Socket is not closed!");
 
-		sockets.remove(socket);
-		socketHandlers.forEach(handler -> handler.connectionTerminated(socket));
+		if(sockets.contains(socket))
+		{
+			sockets.remove(socket);
+			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
+		}
 	}
 
 	@Override
@@ -80,5 +108,32 @@ public final class ServerConnection extends ConnectionAbstract
 	public List<Socket> getSockets()
 	{
 		return new ArrayList<>(sockets);
+	}
+
+	@Override
+	public void setSecretKey(String key)
+	{
+		if(key != null && key.isEmpty())
+			key = null;
+
+		this.secretKey = key;
+	}
+
+	@Override
+	public String getSecretKey()
+	{
+		return secretKey;
+	}
+
+	@Override
+	public void setReconnectTime(long reconnectTime)
+	{
+		throw new IllegalArgumentException("ReconnectTime is only supported by client connections!");
+	}
+
+	@Override
+	public long getReconnectTime()
+	{
+		throw new IllegalArgumentException("ReconnectTime is only supported by client connections!");
 	}
 }

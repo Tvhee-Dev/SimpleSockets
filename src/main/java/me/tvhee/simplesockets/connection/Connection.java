@@ -15,11 +15,21 @@ public interface Connection
 	//to call .get(0). The size will be always 1
 	List<Socket> getSockets();
 
+	//This key should be the same at the client / server for security
+	void setSecretKey(String key);
+
+	String getSecretKey();
+
 	void addHandler(SocketHandler socketHandler);
 
 	void removeHandler(SocketHandler socketHandler);
 
 	boolean isOpen();
+
+	//Client only: Try to reconnect after ... milliseconds to the server
+	void setReconnectTime(long reconnectTime);
+
+	long getReconnectTime();
 
 	void close();
 }
