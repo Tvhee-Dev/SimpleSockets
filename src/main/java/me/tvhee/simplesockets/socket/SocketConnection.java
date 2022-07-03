@@ -207,7 +207,7 @@ public final class SocketConnection implements Socket
 
 			if(socketOutput != null)
 			{
-				socketOutput.write("close");
+				socketOutput.println("close");
 				socketOutput.close();
 				socketOutput = null;
 			}
