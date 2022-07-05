@@ -5,14 +5,14 @@ import java.util.List;
 import me.tvhee.simplesockets.handler.SocketHandler;
 import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
-import me.tvhee.simplesockets.connection.Connection;
+import me.tvhee.simplesockets.connection.SocketConnection;
 
-public abstract class ConnectionAbstract implements Connection
+public abstract class AbstractConnection implements SocketConnection
 {
 	protected final List<SocketHandler> socketHandlers = new ArrayList<>();
 	protected boolean running;
 
-	ConnectionAbstract() {}
+	AbstractConnection() {}
 
 	@Override
 	public void addHandler(SocketHandler socketHandler)

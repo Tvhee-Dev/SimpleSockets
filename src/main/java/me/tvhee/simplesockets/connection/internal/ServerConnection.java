@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
-import me.tvhee.simplesockets.socket.SocketConnection;
+import me.tvhee.simplesockets.socket.SocketImplementation;
 
-public final class ServerConnection extends ConnectionAbstract
+public final class ServerConnection extends AbstractConnection
 {
 	private final List<Socket> sockets = new ArrayList<>();
 	private final int serverPort;
@@ -24,14 +24,21 @@ public final class ServerConnection extends ConnectionAbstract
 	{
 		try
 		{
-			this.serverSocket = new ServerSocket(serverPort);
+			this.serverSocket = new ServerSocket(serverPort, 1);
 
 			new Thread(() ->
 			{
 				try
 				{
+					running = true;
+
 					while(running)
-						new SocketConnection(serverSocket.accept(), ServerConnection.this).start();
+					{
+						System.out.println("Waiting for connections...");
+						java.net.Socket socket = serverSocket.accept();
+						System.out.println("accepted " + socket);
+						new SocketImplementation(socket, ServerConnection.this).start();
+					}
 
 					serverSocket = null;
 				}
@@ -40,9 +47,7 @@ public final class ServerConnection extends ConnectionAbstract
 					if(running)
 						e.printStackTrace();
 				}
-
 			}).start();
-			this.running = true;
 		}
 		catch(Exception e)
 		{

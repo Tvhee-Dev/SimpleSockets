@@ -7,7 +7,7 @@ public final class ConnectionManager
 {
 	private ConnectionManager() {}
 
-	public static Connection serverConnection(int serverPort)
+	public static SocketConnection serverConnection(int serverPort)
 	{
 		try
 		{
@@ -19,7 +19,7 @@ public final class ConnectionManager
 		}
 	}
 
-	public static Connection clientConnection(String serverIP, int serverPort)
+	public static SocketConnection clientConnection(String serverIP, int serverPort)
 	{
 		try
 		{

@@ -4,7 +4,7 @@ import java.util.List;
 import me.tvhee.simplesockets.handler.SocketHandler;
 import me.tvhee.simplesockets.socket.Socket;
 
-public interface Connection
+public interface SocketConnection
 {
 	void start();
 

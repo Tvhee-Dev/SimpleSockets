@@ -1,7 +1,7 @@
 package me.tvhee.simplesockets.socket;
 
 import java.net.InetSocketAddress;
-import me.tvhee.simplesockets.connection.Connection;
+import me.tvhee.simplesockets.connection.SocketConnection;
 import me.tvhee.simplesockets.handler.SocketTermination;
 
 public interface Socket
@@ -30,5 +30,5 @@ public interface Socket
 
 	boolean isClosed();
 
-	Connection getConnection();
+	SocketConnection getConnection();
 }

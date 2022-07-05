@@ -7,17 +7,16 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Timer;
 import java.util.TimerTask;
-import me.tvhee.simplesockets.connection.Connection;
 import me.tvhee.simplesockets.connection.internal.ClientConnection;
-import me.tvhee.simplesockets.connection.internal.ConnectionAbstract;
+import me.tvhee.simplesockets.connection.internal.AbstractConnection;
 import me.tvhee.simplesockets.connection.internal.ServerConnection;
 import me.tvhee.simplesockets.handler.SocketTermination;
 
-public final class SocketConnection implements Socket
+public final class SocketImplementation implements Socket
 {
 	private final java.net.Socket socket;
 	private final TimerTask authenticationTask;
-	private final ConnectionAbstract connection;
+	private final AbstractConnection connection;
 	private String name;
 	private boolean running;
 	private Timer timer;
@@ -26,10 +25,11 @@ public final class SocketConnection implements Socket
 	private PrintWriter socketOutput;
 	private String lastMessage;
 
-	public SocketConnection(java.net.Socket socket, Connection connection)
+	public SocketImplementation(java.net.Socket socket, me.tvhee.simplesockets.connection.SocketConnection socketConnection)
 	{
+		System.out.println(socket);
 		this.socket = socket;
-		this.connection = (ConnectionAbstract) connection;
+		this.connection = (AbstractConnection) socketConnection;
 		this.name = socket.getInetAddress().toString();
 		this.authenticationTask = new TimerTask()
 		{
@@ -93,6 +93,8 @@ public final class SocketConnection implements Socket
 						String message;
 						while((message = socketInput.readLine()) != null && running)
 						{
+							System.out.println(message);
+
 							if(!authenticated)
 							{
 								if(message.startsWith("Secret ") && connection instanceof ServerConnection)
@@ -173,6 +175,7 @@ public final class SocketConnection implements Socket
 				throw new IllegalArgumentException("If you'd like to close the connection, call close()!");
 
 			socketOutput.println(message);
+			System.out.println("Sent " + message);
 			lastMessage = message;
 		}
 		catch(Exception e)
@@ -236,7 +239,7 @@ public final class SocketConnection implements Socket
 	}
 
 	@Override
-	public Connection getConnection()
+	public me.tvhee.simplesockets.connection.SocketConnection getConnection()
 	{
 		return connection;
 	}

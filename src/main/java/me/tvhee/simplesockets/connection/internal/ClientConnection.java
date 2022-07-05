@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
-import me.tvhee.simplesockets.socket.SocketConnection;
+import me.tvhee.simplesockets.socket.SocketImplementation;
 
-public final class ClientConnection extends ConnectionAbstract
+public final class ClientConnection extends AbstractConnection
 {
 	private final String serverIP;
 	private final int serverPort;
@@ -25,9 +25,9 @@ public final class ClientConnection extends ConnectionAbstract
 	{
 		try
 		{
-			SocketConnection socketConnection = new SocketConnection(new java.net.Socket(serverIP, serverPort), this);
-			socketConnection.start();
-			socketConnection.sendMessage("Secret " + secretKey);
+			SocketImplementation socketImplementation = new SocketImplementation(new java.net.Socket(serverIP, serverPort), this);
+			socketImplementation.start();
+			socketImplementation.sendMessage("Secret " + secretKey);
 			running = true;
 		}
 		catch(Exception e)
@@ -79,9 +79,10 @@ public final class ClientConnection extends ConnectionAbstract
 		if(this.socket == null)
 			return;
 
+		socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
+
 		Runnable finishRunnable = () ->
 		{
-			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
 			running = false;
 			ClientConnection.this.socket = null;
 		};
