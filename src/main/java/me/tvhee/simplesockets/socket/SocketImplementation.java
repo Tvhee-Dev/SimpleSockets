@@ -27,7 +27,6 @@ public final class SocketImplementation implements Socket
 
 	public SocketImplementation(java.net.Socket socket, me.tvhee.simplesockets.connection.SocketConnection socketConnection)
 	{
-		System.out.println(socket);
 		this.socket = socket;
 		this.connection = (AbstractConnection) socketConnection;
 		this.name = socket.getInetAddress().toString();
@@ -93,8 +92,6 @@ public final class SocketImplementation implements Socket
 						String message;
 						while((message = socketInput.readLine()) != null && running)
 						{
-							System.out.println(message);
-
 							if(!authenticated)
 							{
 								if(message.startsWith("Secret ") && connection instanceof ServerConnection)
@@ -175,7 +172,6 @@ public final class SocketImplementation implements Socket
 				throw new IllegalArgumentException("If you'd like to close the connection, call close()!");
 
 			socketOutput.println(message);
-			System.out.println("Sent " + message);
 			lastMessage = message;
 		}
 		catch(Exception e)

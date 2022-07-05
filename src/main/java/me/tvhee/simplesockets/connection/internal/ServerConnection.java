@@ -33,12 +33,7 @@ public final class ServerConnection extends AbstractConnection
 					running = true;
 
 					while(running)
-					{
-						System.out.println("Waiting for connections...");
-						java.net.Socket socket = serverSocket.accept();
-						System.out.println("accepted " + socket);
-						new SocketImplementation(socket, ServerConnection.this).start();
-					}
+						new SocketImplementation(serverSocket.accept(), ServerConnection.this).start();
 
 					serverSocket = null;
 				}
