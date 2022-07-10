@@ -116,13 +116,13 @@ public final class SocketImplementation implements Socket
 								continue;
 							}
 
-							connection.notifyHandlers(this, message);
-
 							if(message.equals("close"))
 							{
-								close(SocketTermination.TERMINATED_BY_SERVER);
+								close(connection instanceof ServerConnection ? SocketTermination.TERMINATED_BY_CLIENT : SocketTermination.TERMINATED_BY_SERVER);
 								break;
 							}
+
+							connection.notifyHandlers(this, message);
 						}
 					}
 					catch(Exception e)
