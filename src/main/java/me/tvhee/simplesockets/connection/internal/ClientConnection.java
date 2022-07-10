@@ -1,5 +1,6 @@
 package me.tvhee.simplesockets.connection.internal;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import me.tvhee.simplesockets.handler.SocketTermination;
@@ -79,12 +80,11 @@ public final class ClientConnection extends AbstractConnection
 		if(this.socket == null)
 			return;
 
-		socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
-
 		Runnable finishRunnable = () ->
 		{
 			running = false;
 			ClientConnection.this.socket = null;
+			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
 		};
 
 		if(reason == SocketTermination.TERMINATED_BY_SERVER)
@@ -129,7 +129,10 @@ public final class ClientConnection extends AbstractConnection
 	@Override
 	public List<Socket> getSockets()
 	{
-		return Collections.singletonList(socket);
+		if(socket == null)
+			return new ArrayList<>();
+		else
+			return Collections.singletonList(socket);
 	}
 
 	@Override

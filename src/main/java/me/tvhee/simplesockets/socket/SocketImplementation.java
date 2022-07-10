@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Timer;
 import java.util.TimerTask;
+import me.tvhee.simplesockets.connection.SocketConnection;
 import me.tvhee.simplesockets.connection.internal.ClientConnection;
 import me.tvhee.simplesockets.connection.internal.AbstractConnection;
 import me.tvhee.simplesockets.connection.internal.ServerConnection;
@@ -25,7 +26,7 @@ public final class SocketImplementation implements Socket
 	private PrintWriter socketOutput;
 	private String lastMessage;
 
-	public SocketImplementation(java.net.Socket socket, me.tvhee.simplesockets.connection.SocketConnection socketConnection)
+	public SocketImplementation(java.net.Socket socket, SocketConnection socketConnection)
 	{
 		this.socket = socket;
 		this.connection = (AbstractConnection) socketConnection;
@@ -128,9 +129,9 @@ public final class SocketImplementation implements Socket
 					{
 						if(e instanceof SocketException && e.getMessage().equals("Connection reset"))
 						{
-							close(SocketTermination.TERMINATED_BY_SERVER);
+							close(connection instanceof ServerConnection ? SocketTermination.TERMINATED_BY_CLIENT : SocketTermination.TERMINATED_BY_SERVER);
 						}
-						else
+						else if(running)
 						{
 							close(SocketTermination.ERROR);
 							e.printStackTrace();
@@ -198,12 +199,6 @@ public final class SocketImplementation implements Socket
 			lastMessage = null;
 			authenticated = false;
 
-			if(socketInput != null)
-			{
-				socketInput.close();
-				socketInput = null;
-			}
-
 			if(socketOutput != null)
 			{
 				socketOutput.println("close");
@@ -211,14 +206,20 @@ public final class SocketImplementation implements Socket
 				socketOutput = null;
 			}
 
+			if(!socket.isClosed())
+				socket.close();
+
+			if(socketInput != null)
+			{
+				socketInput.close();
+				socketInput = null;
+			}
+
 			if(timer != null)
 			{
 				timer.cancel();
 				timer = null;
 			}
-
-			if(!socket.isClosed())
-				socket.close();
 
 			connection.handleClose(this, reason);
 		}
@@ -235,7 +236,7 @@ public final class SocketImplementation implements Socket
 	}
 
 	@Override
-	public me.tvhee.simplesockets.connection.SocketConnection getConnection()
+	public SocketConnection getConnection()
 	{
 		return connection;
 	}

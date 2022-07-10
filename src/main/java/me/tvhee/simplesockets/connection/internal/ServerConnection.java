@@ -60,7 +60,7 @@ public final class ServerConnection extends AbstractConnection
 			for(Socket socket : new ArrayList<>(sockets))
 			{
 				if(socket != null && !socket.isClosed())
-					socket.close();
+					socket.close(SocketTermination.TERMINATED_BY_SERVER);
 			}
 
 			serverSocket.close();
@@ -82,7 +82,7 @@ public final class ServerConnection extends AbstractConnection
 	@Override
 	public void handleClose(Socket socket, SocketTermination reason)
 	{
-		if(!socket.isClosed() && socket.isRunning())
+		if(!socket.isClosed() || socket.isRunning())
 			throw new IllegalArgumentException("Socket is not closed!");
 
 		if(sockets.contains(socket))
