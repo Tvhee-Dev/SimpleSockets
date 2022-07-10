@@ -184,7 +184,7 @@ public final class SocketImplementation implements Socket
 	@Override
 	public void close()
 	{
-		close(SocketTermination.TERMINATED_BY_CLIENT);
+		close(connection instanceof ServerConnection ? SocketTermination.TERMINATED_BY_SERVER : SocketTermination.TERMINATED_BY_CLIENT);
 	}
 
 	@Override
