@@ -12,15 +12,14 @@ import me.tvhee.simplesockets.task.SocketKeepAliveTask;
 public final class SocketInputThread extends Thread
 {
 	private final Socket socket;
-	private final Timer timer;
 	private final BufferedReader inputStream;
 	private final SocketAuthenticationTask authenticationTask;
 	private final SocketKeepAliveTask socketKeepAliveTask;
+	private Timer timer;
 
 	public SocketInputThread(Socket socket, BufferedReader inputStream)
 	{
 		this.socket = socket;
-		this.timer = new Timer();
 		this.inputStream = inputStream;
 		this.authenticationTask = new SocketAuthenticationTask(socket);
 		this.socketKeepAliveTask = new SocketKeepAliveTask(socket);
@@ -33,6 +32,10 @@ public final class SocketInputThread extends Thread
 		{
 			try
 			{
+				if(timer != null)
+					cancel();
+
+				timer = new Timer();
 				timer.schedule(authenticationTask, 5000);
 				timer.schedule(socketKeepAliveTask, 5001, 5000);
 
@@ -85,6 +88,10 @@ public final class SocketInputThread extends Thread
 
 	public void cancel()
 	{
-		timer.cancel();
+		if(timer != null)
+		{
+			timer.cancel();
+			timer = null;
+		}
 	}
 }
