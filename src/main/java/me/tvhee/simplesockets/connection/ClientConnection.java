@@ -1,21 +1,23 @@
-package me.tvhee.simplesockets.connection.internal;
+package me.tvhee.simplesockets.connection;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import me.tvhee.simplesockets.handler.SocketTermination;
+import java.util.Timer;
+import java.util.TimerTask;
 import me.tvhee.simplesockets.socket.Socket;
-import me.tvhee.simplesockets.socket.SocketImplementation;
+import me.tvhee.simplesockets.socket.SocketTerminateReason;
 
-public final class ClientConnection extends AbstractConnection
+public final class ClientConnection extends SocketConnection
 {
 	private final String serverIP;
 	private final int serverPort;
+	private Timer reconnectTask;
 	private long reconnect;
 	private String secretKey;
 	private Socket socket;
 
-	public ClientConnection(String serverIP, int serverPort)
+	ClientConnection(String serverIP, int serverPort)
 	{
 		this.serverIP = serverIP;
 		this.serverPort = serverPort;
@@ -26,9 +28,10 @@ public final class ClientConnection extends AbstractConnection
 	{
 		try
 		{
-			SocketImplementation socketImplementation = new SocketImplementation(new java.net.Socket(serverIP, serverPort), this);
-			socketImplementation.start();
-			socketImplementation.sendMessage("Secret " + secretKey);
+			Socket socket = new Socket(new java.net.Socket(serverIP, serverPort), this);
+			socket.start();
+			socket.sendMessage("Secret " + secretKey);
+
 			running = true;
 		}
 		catch(Exception e)
@@ -40,25 +43,36 @@ public final class ClientConnection extends AbstractConnection
 	@Override
 	public void close()
 	{
+		close(SocketTerminateReason.TERMINATED_BY_CLIENT);
+	}
+
+	private void close(SocketTerminateReason reason)
+	{
 		if(!running)
 			return;
 
 		running = false;
 
+		if(reconnectTask != null)
+		{
+			reconnectTask.cancel();
+			reconnectTask = null;
+		}
+
 		if(socket == null)
 			return;
 
 		if(!socket.isClosed())
-		{
 			socket.close();
-			socket = null;
-		}
+
+		socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
+		socket = null;
 	}
 
 	@Override
 	public void notifyHandlers(Socket socket, String message)
 	{
-		if(message.equals("close"))
+		if(message.equals("Close"))
 			reconnect = -1;
 
 		super.notifyHandlers(socket, message);
@@ -72,7 +86,7 @@ public final class ClientConnection extends AbstractConnection
 	}
 
 	@Override
-	public void handleClose(Socket socket, SocketTermination reason)
+	public void handleClose(Socket socket, SocketTerminateReason reason)
 	{
 		if(!socket.isClosed() && socket.isRunning())
 			throw new IllegalArgumentException("Socket is not closed!");
@@ -80,40 +94,35 @@ public final class ClientConnection extends AbstractConnection
 		if(this.socket == null)
 			return;
 
-		Runnable finishRunnable = () ->
+		if(reason == SocketTerminateReason.TERMINATED_BY_SERVER || reason == SocketTerminateReason.NO_RESPONSE)
 		{
-			running = false;
-			ClientConnection.this.socket = null;
-			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
-		};
-
-		if(reason == SocketTermination.TERMINATED_BY_SERVER)
-		{
-			new Thread(() ->
+			reconnectTask = new Timer();
+			reconnectTask.schedule(new TimerTask()
 			{
-				if(reconnect > 0)
+				@Override
+				public void run()
 				{
-					System.out.println("[Warning] Lost connection with " + socket.getRemoteAddress() + "!");
+					if(reconnect > 0)
+					{
+						try
+						{
+							java.net.Socket connectedSocket = new java.net.Socket(serverIP, serverPort);
+							socket.reconnect(connectedSocket);
+							socket.sendMessage("Secret " + secretKey);
+							return;
+						}
+						catch(Exception ignored)
+						{
+						}
+					}
 
-					try
-					{
-						Thread.sleep(reconnect);
-						ClientConnection.this.start();
-						System.out.println("[Success] Connected successfully back with " + socket.getRemoteAddress());
-						return;
-					}
-					catch(Exception e)
-					{
-						System.err.println("[Error] Could not reconnect to " + socket.getRemoteAddress() + "!");
-					}
+					close(reason);
 				}
-
-				finishRunnable.run();
-			}).start();
+			}, reconnect);
 		}
 		else
 		{
-			finishRunnable.run();
+			close(reason);
 		}
 	}
 
@@ -150,7 +159,6 @@ public final class ClientConnection extends AbstractConnection
 		return secretKey;
 	}
 
-	@Override
 	public void setReconnectTime(long reconnectTime)
 	{
 		if(reconnectTime < 0)
@@ -159,7 +167,6 @@ public final class ClientConnection extends AbstractConnection
 		this.reconnect = reconnectTime;
 	}
 
-	@Override
 	public long getReconnectTime()
 	{
 		return reconnect;

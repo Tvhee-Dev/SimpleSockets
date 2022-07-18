@@ -1,21 +1,21 @@
-package me.tvhee.simplesockets.connection.internal;
+package me.tvhee.simplesockets.connection;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
-import me.tvhee.simplesockets.handler.SocketTermination;
 import me.tvhee.simplesockets.socket.Socket;
-import me.tvhee.simplesockets.socket.SocketImplementation;
+import me.tvhee.simplesockets.socket.SocketTerminateReason;
+import me.tvhee.simplesockets.thread.SocketAcceptThread;
 
-public final class ServerConnection extends AbstractConnection
+public final class ServerConnection extends SocketConnection
 {
 	private final List<Socket> sockets = new ArrayList<>();
 	private final int serverPort;
 	private String secretKey;
 	private ServerSocket serverSocket;
 
-	public ServerConnection(int serverPort)
+	ServerConnection(int serverPort)
 	{
 		this.serverPort = serverPort;
 	}
@@ -24,25 +24,10 @@ public final class ServerConnection extends AbstractConnection
 	{
 		try
 		{
-			this.serverSocket = new ServerSocket(serverPort, 1);
+			serverSocket = new ServerSocket(serverPort);
+			running = true;
 
-			new Thread(() ->
-			{
-				try
-				{
-					running = true;
-
-					while(running)
-						new SocketImplementation(serverSocket.accept(), ServerConnection.this).start();
-
-					serverSocket = null;
-				}
-				catch(IOException e)
-				{
-					if(running)
-						e.printStackTrace();
-				}
-			}).start();
+			new SocketAcceptThread(this, serverSocket, sockets).start();
 		}
 		catch(Exception e)
 		{
@@ -55,16 +40,22 @@ public final class ServerConnection extends AbstractConnection
 	{
 		try
 		{
+			if(!running)
+				return;
+
 			running = false;
 
 			for(Socket socket : new ArrayList<>(sockets))
 			{
 				if(socket != null && !socket.isClosed())
-					socket.close(SocketTermination.TERMINATED_BY_SERVER);
+					socket.close(SocketTerminateReason.TERMINATED_BY_SERVER);
 			}
 
-			serverSocket.close();
-			serverSocket = null;
+			if(serverSocket != null)
+			{
+				serverSocket.close();
+				serverSocket = null;
+			}
 		}
 		catch(IOException e)
 		{
@@ -80,22 +71,18 @@ public final class ServerConnection extends AbstractConnection
 	}
 
 	@Override
-	public void handleClose(Socket socket, SocketTermination reason)
+	public void handleClose(Socket socket, SocketTerminateReason reason)
 	{
 		if(!socket.isClosed() || socket.isRunning())
 			throw new IllegalArgumentException("Socket is not closed!");
 
-		if(sockets.contains(socket))
-		{
-			sockets.remove(socket);
-			socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
-		}
+		socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
 	}
 
 	@Override
 	public Socket getSocket(String name)
 	{
-		for(Socket socket : sockets)
+		for(Socket socket : getOnlineSockets())
 		{
 			if(socket.getName().equals(name))
 				return socket;
@@ -107,7 +94,7 @@ public final class ServerConnection extends AbstractConnection
 	@Override
 	public List<Socket> getSockets()
 	{
-		return new ArrayList<>(sockets);
+		return getOnlineSockets();
 	}
 
 	@Override
@@ -128,12 +115,25 @@ public final class ServerConnection extends AbstractConnection
 	@Override
 	public void setReconnectTime(long reconnectTime)
 	{
-		throw new IllegalArgumentException("ReconnectTime is only supported by client connections!");
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public long getReconnectTime()
 	{
-		throw new IllegalArgumentException("ReconnectTime is only supported by client connections!");
+		throw new UnsupportedOperationException();
+	}
+
+	private List<Socket> getOnlineSockets()
+	{
+		List<Socket> onlineSockets = new ArrayList<>();
+
+		for(Socket socket : this.sockets)
+		{
+			if(socket.isRunning() && !socket.isClosed())
+				onlineSockets.add(socket);
+		}
+
+		return onlineSockets;
 	}
 }

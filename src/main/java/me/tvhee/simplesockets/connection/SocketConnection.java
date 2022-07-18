@@ -1,35 +1,69 @@
 package me.tvhee.simplesockets.connection;
 
+import java.util.ArrayList;
 import java.util.List;
-import me.tvhee.simplesockets.handler.SocketHandler;
 import me.tvhee.simplesockets.socket.Socket;
+import me.tvhee.simplesockets.socket.SocketTerminateReason;
+import me.tvhee.simplesockets.socket.SocketHandler;
 
-public interface SocketConnection
+public abstract class SocketConnection
 {
-	void start();
+	protected final List<SocketHandler> socketHandlers = new ArrayList<>();
+	protected boolean running;
+
+	SocketConnection() {}
+
+	public static SocketConnection clientConnection(String host, int port)
+	{
+		return new ClientConnection(host, port);
+	}
+
+	public static SocketConnection serverConnection(int port)
+	{
+		return new ServerConnection(port);
+	}
+
+	public abstract void handleAuthenticated(Socket socket);
+
+	public abstract void handleClose(Socket socket, SocketTerminateReason reason);
+
+	public abstract void start();
 
 	//Returns the socket with the specified name
-	Socket getSocket(String name);
+	public abstract Socket getSocket(String name);
 
-	//Returns the list of connected sockets. If this connection instance is a ClientConnection it is always safe
-	//to call .get(0). The size will be always 1
-	List<Socket> getSockets();
+	//Returns the list of connected sockets. If this connection instance is a ClientConnection it is safe
+	//to call .get(0) if .isOpen() returns true. The size will be always 1
+	public abstract List<Socket> getSockets();
 
 	//This key should be the same at the client / server for security
-	void setSecretKey(String key);
+	public abstract void setSecretKey(String key);
 
-	String getSecretKey();
+	public abstract String getSecretKey();
 
-	void addHandler(SocketHandler socketHandler);
+	public abstract void setReconnectTime(long reconnectTime);
 
-	void removeHandler(SocketHandler socketHandler);
+	public abstract long getReconnectTime();
 
-	boolean isOpen();
+	public abstract void close();
 
-	//Client only: Try to reconnect after ... milliseconds to the server
-	void setReconnectTime(long reconnectTime);
+	public void addHandler(SocketHandler socketHandler)
+	{
+		socketHandlers.add(socketHandler);
+	}
 
-	long getReconnectTime();
+	public void removeHandler(SocketHandler socketHandler)
+	{
+		socketHandlers.remove(socketHandler);
+	}
 
-	void close();
+	public void notifyHandlers(Socket socket, String message)
+	{
+		socketHandlers.forEach(socketHandler -> socketHandler.handle(socket, message));
+	}
+
+	public boolean isOpen()
+	{
+		return running;
+	}
 }

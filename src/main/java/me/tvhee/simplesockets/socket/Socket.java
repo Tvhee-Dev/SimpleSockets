@@ -1,34 +1,197 @@
 package me.tvhee.simplesockets.socket;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import me.tvhee.simplesockets.connection.ServerConnection;
 import me.tvhee.simplesockets.connection.SocketConnection;
-import me.tvhee.simplesockets.handler.SocketTermination;
+import me.tvhee.simplesockets.thread.SocketInputThread;
 
-public interface Socket
+public final class Socket
 {
-	String getName();
+	private final SocketConnection connection;
+	private String name;
+	private java.net.Socket socket;
+	private SocketInputThread socketInputThread;
+	private boolean running;
+	private BufferedReader socketInput;
+	private PrintWriter socketOutput;
+	private String lastMessage;
 
-	void setName(String name);
+	public Socket(java.net.Socket socket, SocketConnection socketConnection)
+	{
+		this.socket = socket;
+		this.connection = socketConnection;
+		this.name = socket.getInetAddress().toString();
+	}
 
-	//The address of the machine the socket is connected to
-	InetSocketAddress getRemoteAddress();
+	//Please do not call this method
+	public void reconnect(java.net.Socket socket)
+	{
+		if(running)
+			throw new IllegalArgumentException("Socket was never disconnected!");
 
-	//THe address of THIS machine
-	InetSocketAddress getLocalAddress();
+		this.socket = socket;
+		this.name = socket.getInetAddress().toString();
+		this.start();
+	}
 
-	void start();
+	public String getName()
+	{
+		return name;
+	}
 
-	boolean isRunning();
+	public void setName(String name)
+	{
+		if(connection.getSocket(name) != null)
+			throw new IllegalArgumentException("Socket name " + name + " is already in use!");
 
-	void sendMessage(String message);
+		this.name = name;
+	}
 
-	void sendMessage(String message, boolean duplicateCheck);
+	public InetSocketAddress getRemoteAddress()
+	{
+		return (InetSocketAddress) socket.getRemoteSocketAddress();
+	}
 
-	void close();
+	public InetSocketAddress getLocalAddress()
+	{
+		return (InetSocketAddress) socket.getLocalSocketAddress();
+	}
 
-	void close(SocketTermination reason);
+	public void start()
+	{
+		try
+		{
+			if(running)
+				throw new IllegalArgumentException("Socket is already running on " + socket.getInetAddress().toString() + "!");
 
-	boolean isClosed();
+			socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			socketOutput = new PrintWriter(socket.getOutputStream(), true);
+			running = true;
 
-	SocketConnection getConnection();
+			(socketInputThread = new SocketInputThread(this, socketInput)).start();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public boolean isRunning()
+	{
+		return running;
+	}
+
+	public void sendFile(File file)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+
+		try
+		{
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+
+			String nextLine;
+			while((nextLine = reader.readLine()) != null)
+				stringBuilder.append(nextLine).append("%n");
+
+			reader.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		sendMessage(file.getName() + "/" + stringBuilder);
+	}
+
+	public void sendMessage(String message)
+	{
+		sendMessage(message, true);
+	}
+
+	public void sendMessage(String message, boolean duplicateCheck)
+	{
+		if(isClosed())
+			throw new IllegalArgumentException("Socket is closed!");
+
+		if(message.equals(lastMessage) && duplicateCheck)
+			return;
+
+		try
+		{
+			if(message.equals("Close"))
+				throw new IllegalArgumentException("If you'd like to close the connection, call close()!");
+
+			socketOutput.println(message);
+			lastMessage = message;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public void close()
+	{
+		close(connection instanceof ServerConnection ? SocketTerminateReason.TERMINATED_BY_SERVER : SocketTerminateReason.TERMINATED_BY_CLIENT);
+	}
+
+	public void close(SocketTerminateReason reason)
+	{
+		try
+		{
+			if(isClosed())
+				return;
+
+			running = false;
+			lastMessage = null;
+
+			if(socketInputThread != null)
+			{
+				socketInputThread.cancel();
+				socketInputThread = null;
+			}
+
+			if(socketOutput != null)
+			{
+				socketOutput.println("Close");
+				socketOutput.close();
+				socketOutput = null;
+			}
+
+			if(!socket.isClosed())
+				socket.close();
+
+			if(socketInput != null)
+			{
+				socketInput.close();
+				socketInput = null;
+			}
+
+			connection.handleClose(this, reason);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	public boolean isClosed()
+	{
+		return socket.isClosed() || !running;
+	}
+
+	public String toString()
+	{
+		return socket.toString();
+	}
+
+	public SocketConnection getConnection()
+	{
+		return connection;
+	}
 }
