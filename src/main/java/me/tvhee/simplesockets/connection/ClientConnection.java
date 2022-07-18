@@ -1,8 +1,8 @@
 package me.tvhee.simplesockets.connection;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import me.tvhee.simplesockets.socket.Socket;
@@ -136,12 +136,18 @@ public final class ClientConnection extends SocketConnection
 	}
 
 	@Override
-	public List<Socket> getSockets()
+	public Socket getRandom()
+	{
+		return socket;
+	}
+
+	@Override
+	public Set<Socket> getSockets()
 	{
 		if(socket == null)
-			return new ArrayList<>();
+			return new HashSet<>();
 		else
-			return Collections.singletonList(socket);
+			return new HashSet<>(Collections.singletonList(socket));
 	}
 
 	@Override

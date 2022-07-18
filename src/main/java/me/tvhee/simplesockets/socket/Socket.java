@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import me.tvhee.simplesockets.connection.ServerConnection;
 import me.tvhee.simplesockets.connection.SocketConnection;
 import me.tvhee.simplesockets.thread.SocketInputThread;
@@ -193,5 +194,24 @@ public final class Socket
 	public SocketConnection getConnection()
 	{
 		return connection;
+	}
+
+	@Override
+	public boolean equals(Object other)
+	{
+		if(this == other)
+			return true;
+
+		if(other == null || getClass() != other.getClass())
+			return false;
+
+		Socket otherSocket = (Socket) other;
+		return Objects.equals(socket, otherSocket.socket);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(socket);
 	}
 }

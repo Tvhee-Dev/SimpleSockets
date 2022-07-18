@@ -2,7 +2,7 @@ package me.tvhee.simplesockets.thread;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.List;
+import java.util.Set;
 import me.tvhee.simplesockets.connection.ServerConnection;
 import me.tvhee.simplesockets.socket.Socket;
 
@@ -10,9 +10,9 @@ public final class SocketAcceptThread extends Thread
 {
 	private final ServerConnection serverConnection;
 	private final ServerSocket serverSocket;
-	private final List<Socket> sockets;
+	private final Set<Socket> sockets;
 
-	public SocketAcceptThread(ServerConnection serverConnection, ServerSocket serverSocket, List<Socket> sockets)
+	public SocketAcceptThread(ServerConnection serverConnection, ServerSocket serverSocket, Set<Socket> sockets)
 	{
 		this.serverConnection = serverConnection;
 		this.serverSocket = serverSocket;
@@ -25,11 +25,7 @@ public final class SocketAcceptThread extends Thread
 		try
 		{
 			while(serverConnection.isOpen())
-			{
-				Socket socket = new Socket(serverSocket.accept(), serverConnection);
-				socket.start();
-				sockets.add(socket);
-			}
+				new Socket(serverSocket.accept(), serverConnection).start();
 		}
 		catch(IOException e)
 		{

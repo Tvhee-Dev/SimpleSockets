@@ -3,14 +3,17 @@ package me.tvhee.simplesockets.connection;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import me.tvhee.simplesockets.socket.Socket;
 import me.tvhee.simplesockets.socket.SocketTerminateReason;
 import me.tvhee.simplesockets.thread.SocketAcceptThread;
 
 public final class ServerConnection extends SocketConnection
 {
-	private final List<Socket> sockets = new ArrayList<>();
+	private final Set<Socket> sockets = new HashSet<>();
 	private final int serverPort;
 	private String secretKey;
 	private ServerSocket serverSocket;
@@ -76,13 +79,14 @@ public final class ServerConnection extends SocketConnection
 		if(!socket.isClosed() || socket.isRunning())
 			throw new IllegalArgumentException("Socket is not closed!");
 
+		sockets.remove(socket);
 		socketHandlers.forEach(handler -> handler.connectionTerminated(socket, reason));
 	}
 
 	@Override
 	public Socket getSocket(String name)
 	{
-		for(Socket socket : getOnlineSockets())
+		for(Socket socket : sockets)
 		{
 			if(socket.getName().equals(name))
 				return socket;
@@ -92,9 +96,21 @@ public final class ServerConnection extends SocketConnection
 	}
 
 	@Override
-	public List<Socket> getSockets()
+	public Socket getRandom()
 	{
-		return getOnlineSockets();
+		List<Socket> list = new ArrayList<>(sockets);
+		Collections.shuffle(list);
+
+		if(list.isEmpty())
+			return null;
+
+		return list.get(0);
+	}
+
+	@Override
+	public Set<Socket> getSockets()
+	{
+		return new HashSet<>(sockets);
 	}
 
 	@Override
@@ -122,18 +138,5 @@ public final class ServerConnection extends SocketConnection
 	public long getReconnectTime()
 	{
 		throw new UnsupportedOperationException();
-	}
-
-	private List<Socket> getOnlineSockets()
-	{
-		List<Socket> onlineSockets = new ArrayList<>();
-
-		for(Socket socket : this.sockets)
-		{
-			if(socket.isRunning() && !socket.isClosed())
-				onlineSockets.add(socket);
-		}
-
-		return onlineSockets;
 	}
 }

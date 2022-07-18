@@ -54,12 +54,6 @@ public final class SocketInputThread extends Thread
 						continue;
 					}
 
-					if(message.equals("Test"))
-					{
-						socket.sendMessage("Test");
-						continue;
-					}
-
 					if(message.equals("Close"))
 					{
 						socket.close(socket.getConnection() instanceof ServerConnection ?
