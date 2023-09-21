@@ -3,8 +3,8 @@
 ## Usage
 1. To start connecting with sockets, create your connection instance
 ```java
-Connection connection = ConnectionManager.serverConnection(port); //Server side
-Connection connection = ConnectionManager.clientConnection(IP, port); //Client side
+SocketConnection connection = SocketConnection.serverConnection(port); //Server side
+SocketConnection connection = SocketConnection.clientConnection(IP, port); //Client side
 ```
 2. Create a new class implementing `SocketHandler`
 ```java
