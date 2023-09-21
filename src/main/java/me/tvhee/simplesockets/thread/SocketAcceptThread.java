@@ -25,7 +25,11 @@ public final class SocketAcceptThread extends Thread
 		try
 		{
 			while(serverConnection.isOpen())
-				new Socket(serverSocket.accept(), serverConnection).start();
+			{
+				Socket socket = new Socket(serverSocket.accept(), serverConnection);
+				sockets.add(socket);
+				socket.start();
+			}
 		}
 		catch(IOException e)
 		{

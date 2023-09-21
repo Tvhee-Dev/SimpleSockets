@@ -147,7 +147,7 @@ public final class Socket
 		{
 			if(isClosed())
 				return;
-
+			
 			running = false;
 			lastMessage = null;
 
@@ -157,28 +157,39 @@ public final class Socket
 				socketInputThread = null;
 			}
 
-			if(socketOutput != null)
+			try
 			{
-				socketOutput.println("Close");
-				socketOutput.close();
+				if(socketInput != null)
+				{
+					socketInput.close();
+					socketInput = null;
+				}
+				
+				if(socketOutput != null)
+				{
+					socketOutput.println("Close");
+					socketOutput.close();
+				}
+			}
+			catch(Exception ignored)
+			{
+			
+			}
+			finally
+			{
+				socketInput = null;
 				socketOutput = null;
 			}
-
+			
 			if(!socket.isClosed())
 				socket.close();
-
-			if(socketInput != null)
-			{
-				socketInput.close();
-				socketInput = null;
-			}
-
-			connection.handleClose(this, reason);
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
 		}
+		
+		connection.handleClose(this, reason);
 	}
 
 	public boolean isClosed()

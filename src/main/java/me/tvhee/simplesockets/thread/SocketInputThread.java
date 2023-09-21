@@ -28,39 +28,40 @@ public final class SocketInputThread extends Thread
 	@Override
 	public void run()
 	{
+		if(timer != null)
+			cancel();
+		
+		timer = new Timer();
+		
+		if(socket.getConnection().getSecretKey() != null)
+			timer.schedule(authenticationTask, 5000);
+		
+		timer.schedule(socketKeepAliveTask, 5001, 5000);
+		
 		while(socket.isRunning())
 		{
 			try
 			{
-				if(timer != null)
-					cancel();
-
-				timer = new Timer();
-				timer.schedule(authenticationTask, 5000);
-				timer.schedule(socketKeepAliveTask, 5001, 5000);
-
 				String message;
 				while((message = inputStream.readLine()) != null && socket.isRunning())
 				{
+					socketKeepAliveTask.keepAlive(message);
+					
+					if(message.equals("KeepAlive") || message.equals("KeepAliveResponse"))
+						continue;
+					
 					if(message.startsWith("Secret ") || message.equals("SecretAccepted"))
 					{
 						authenticationTask.authenticate(message);
 						continue;
 					}
-
-					if(message.equals("KeepAlive") || message.equals("KeepAliveResponse"))
-					{
-						socketKeepAliveTask.keepAlive(message);
-						continue;
-					}
-
+					
 					if(message.equals("Close"))
 					{
-						socket.close(socket.getConnection() instanceof ServerConnection ?
-								SocketTerminateReason.TERMINATED_BY_CLIENT : SocketTerminateReason.TERMINATED_BY_SERVER);
+						socket.close(socket.getConnection() instanceof ServerConnection ? SocketTerminateReason.TERMINATED_BY_CLIENT : SocketTerminateReason.TERMINATED_BY_SERVER);
 						break;
 					}
-
+					
 					socket.getConnection().notifyHandlers(socket, message);
 				}
 			}
@@ -68,8 +69,7 @@ public final class SocketInputThread extends Thread
 			{
 				if(e instanceof SocketException && e.getMessage().equals("Connection reset"))
 				{
-					socket.close(socket.getConnection() instanceof ServerConnection ?
-							SocketTerminateReason.TERMINATED_BY_CLIENT : SocketTerminateReason.TERMINATED_BY_SERVER);
+					socket.close(socket.getConnection() instanceof ServerConnection ? SocketTerminateReason.TERMINATED_BY_CLIENT : SocketTerminateReason.TERMINATED_BY_SERVER);
 				}
 				else if(socket.isRunning())
 				{

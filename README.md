@@ -19,7 +19,7 @@ public class MySocketHandler implements SocketHandler
 ```
 3. Register your handler in your connection instance
 ```java
-connection.registerHandler(new MySocketHandler());
+connection.addHandler(new MySocketHandler());
 ```
 4. You are ready to go! Start the connection
 ```java

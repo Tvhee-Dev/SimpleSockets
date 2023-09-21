@@ -60,9 +60,9 @@ public final class ServerConnection extends SocketConnection
 				serverSocket = null;
 			}
 		}
-		catch(IOException e)
+		catch(IOException ignored)
 		{
-			e.printStackTrace();
+		
 		}
 	}
 
